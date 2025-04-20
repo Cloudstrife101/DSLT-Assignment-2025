@@ -1,0 +1,387 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+#define Size 10
+
+typedef struct { //Queue implementation using stack
+    char *data[Size];
+    int frt;
+    int rear;
+    int size;
+} Queue;
+
+void Qchk(Queue *q) {
+    q->frt = 0;
+    q->rear = -1;
+    q->size = 0;
+}
+
+int EmptChk(Queue *q) { //Checks if queue is empty
+    return q->size == 0;
+}
+
+int Fullchk(Queue *q) { //Checks if queue is full by comparing with size
+    return q->size == Size;
+}
+
+void enqueue(Queue *q, char *item) { //Function to enqueue
+    if (Fullchk(q)) {
+        printf("The queue is full!\n");
+        return;
+    }
+    q->rear = (q->rear + 1) % Size; //Adds element to rear position
+    q->data[q->rear] = item;
+    q->size++; //increments size
+}
+
+char *dequeue(Queue *q) { //Function to dequeue
+    if (EmptChk(q))
+        return NULL;
+    char *item = q->data[q->frt];
+    q->frt = (q->frt + 1) % Size; //Increments front, i.e ignores first element
+    q->size--; //decreases size
+    return item;
+}
+
+//Stack implementation (Robotic manager)
+#define StkSize 10
+
+typedef struct { //Stack implementaiton using structure
+    char *data[StkSize];
+    int top;
+} Stack;
+
+void stkin(Stack *s) {
+    s->top = -1;
+}
+
+int EmptChkS(Stack *s) {
+    return s->top == -1;
+}
+
+int FullChkS(Stack *s) {
+    return s->top == StkSize - 1;
+}
+
+void push(Stack *s, char *item) { //Function to push value (here, item) to stack
+    if (FullChkS(s)) {
+        printf("Stack overflow\n");
+        return;
+    }
+    s->data[++s->top] = item; //increments top 
+} 
+
+char *pop(Stack *s) { //function to pop topmost element
+    if (EmptChkS(s))
+        return NULL;
+    return s->data[s->top--];//decreases top 
+}
+
+void partDel() {
+    printf("<--------------- Part Delivery Simulation ------------------->\n");
+    
+    // Initialize queue with arriving parts
+    Queue partQueue;
+    Qchk(&partQueue);
+    char *parts[] = {"Engine", "Chassis", "Wheels", "Doors", "Battery", "Hood"}; //As given by given question, can be replaces by user input if required
+    int partCount = sizeof(parts) / sizeof(parts[0]);
+    
+    for (int i = 0; i < partCount; i++) {
+        enqueue(&partQueue, parts[i]);
+        printf("The '%s' has arrived on the conveyor belt.\n", parts[i]);
+    }
+    printf("\n");
+    //LIFO implementation of robot arm picking up parts
+    Stack robotArmStack;
+    stkin(&robotArmStack);
+    
+    while (!EmptChk(&partQueue)) {
+        char *part = dequeue(&partQueue);
+        push(&robotArmStack, part);
+        printf("Robot arm picked up '%s' and placed it in its stack.\n", part);
+    }
+    
+    // Pop the stack to reveal the final assembly order
+    printf("\nAssembly Order (Last In, First Out):\n");
+    while (!EmptChkS(&robotArmStack)) {
+        char *assembled = pop(&robotArmStack);
+        printf("Placing, assembling: %s\n", assembled);
+        printf("Assembled\n");
+    }
+    
+    
+    printf("\nNote: The robot arm ensures the \"Hood\" is installed last as required\n\n");
+    printf("<----------------------Prototype completed--------------------->\n\n");
+}
+
+//Array implementation for storage
+void Garage() {
+    printf("<------Car Storage--------->\n");
+    
+    #define StorageCap 8
+    char *garage[StorageCap];
+    int count = 0;
+    
+    for (int i = 1; i <= 10; i++) { //Adds cars for max 10, however storage cap 8
+        char Buffer[10];
+        sprintf(Buffer, "Car%d", i);
+        // Duplicate the string so memory persists.
+        char *carPrototype = strdup(Buffer);
+        
+        if (count < StorageCap) {
+            garage[count++] = carPrototype;
+            printf("%s stored in the garage.\n", carPrototype);
+        } else {
+            //If Garage full, ships out oldest protype
+            printf("Garage full! Shipping out the oldest prototype: %s.\n", garage[0]);
+            printf("Shipped!\n");
+            free(garage[0]);
+            for (int j = 1; j < count; j++) { //Shifts all protypes once left to reinitiate oldest protype
+                garage[j - 1] = garage[j];
+            }
+            garage[count - 1] = carPrototype;
+            printf("%s stored in the garage.\n", carPrototype);
+        }
+    }
+    
+    // Display final garage occupancy.
+    printf("\nFinal garage occupancy: \n");
+    for (int i = 0; i < count; i++) {
+        printf("%s \n ", garage[i]);
+    }
+    // Free allocated memory.
+    for (int i = 0; i < count; i++) {
+        free(garage[i]); //Optimization
+    }
+    printf("\n<--------------------------Prototype handling--------------------->\n\n");
+}
+//Linked list implementation
+// Singly Linked List Node for Defective Prototypes
+typedef struct SNode {
+    char *data;
+    struct SNode *next;
+} SNode;
+
+SNode* createSNode(char *data) { //Node creation
+    SNode *node = (SNode *)malloc(sizeof(SNode));
+    node->data = strdup(data);
+    node->next = NULL;
+    return node;
+}
+
+void SLLin(SNode **head, char *data) { //Function to insert prototype into LL
+    SNode *new_node = createSNode(data);
+    new_node->next = *head;
+    *head = new_node;
+}
+
+int SLLdel(SNode **head, char *data) {
+    SNode *current = *head, *prev = NULL;
+    
+    while (current != NULL) {
+        if (strcmp(current->data, data) == 0) {
+            if (prev == NULL) {  // removing head
+                *head = current->next;
+            } else {
+                prev->next = current->next;
+            }
+            free(current->data);
+            free(current);
+            return 1;  // Successfully removed.
+        }
+        prev = current;
+        current = current->next;
+    }
+    return 0; //Edge case
+}
+
+void RecSLL(SNode *head) {
+    while (head != NULL) {
+        printf("%s\n", head->data);
+        head = head->next;
+    }
+}
+
+// Doubly Linked List Node for Repaired Prototypes
+typedef struct DNode {
+    char *data;
+    struct DNode *next;
+    struct DNode *prev;
+} DNode;
+
+DNode* createDNode(char *data) { //Node creation
+    DNode *node = (DNode *)malloc(sizeof(DNode));
+    node->data = strdup(data);
+    node->next = NULL;
+    node->prev = NULL;
+    return node;
+}
+
+typedef struct {
+    DNode *head;
+    DNode *tail;
+} DoublyLL;
+
+void initDLL(DoublyLL *list) {
+    list->head = NULL;
+    list->tail = NULL;
+}
+
+void insertDLL(DoublyLL *list, char *data) {
+    DNode *new_node = createDNode(data);
+    if (list->head == NULL) {
+        list->head = list->tail = new_node;
+    } else {
+        list->tail->next = new_node;
+        new_node->prev = list->tail;
+        list->tail = new_node;
+    }
+}
+
+void ForwardDLL(DoublyLL *list) {
+    DNode *current = list->head;
+    while (current != NULL) {
+        printf("%s\n", current->data);
+        current = current->next;
+    }
+}
+
+void BackDLL(DoublyLL *list) {
+    DNode *current = list->tail;
+    while (current != NULL) {
+        printf("%s\n", current->data);
+        current = current->prev;
+    }
+}
+
+void DefectiveTracking() {
+    printf("<-------Defective Prototypes------>\n");
+    
+    SNode *defectiveList = NULL;
+    SLLin(&defectiveList, "Car3, sending to repair shop"); //Assuming cars 3 and 6 are defective
+    SLLin(&defectiveList, "Car6, sending to repair shop");
+    
+    printf("Defective Prototypes (Singly Linked List):\n");
+    RecSLL(defectiveList);
+    
+    // After repair, remove "Car3" from the defective list and insert it into a doubly linked list.
+    if (SLLdel(&defectiveList, "Car3")) {
+        DoublyLL repairedList;
+        initDLL(&repairedList);
+        insertDLL(&repairedList, "Car3");
+        printf("\nCar3 has been repaired and moved to the Doubly Linked List for further inspection.\n");
+        
+        printf("\nTraversing repaired prototypes (forward):\n");
+        ForwardDLL(&repairedList);
+        printf("Traversing repaired prototypes (backward):\n");
+        BackDLL(&repairedList);
+        
+        // Free nodes in the doubly linked list.
+        DNode *curr = repairedList.head;
+        while (curr != NULL) {
+            DNode *next = curr->next;
+            free(curr->data);
+            free(curr);
+            curr = next;
+        }
+    } else {
+        printf("\nCar3 was not found in the defective list, repaired!\n");
+    }
+    
+    // Free the remaining nodes of the defective singly linked list.
+    SNode *curr = defectiveList;
+    while (curr != NULL) {
+        SNode *next = curr->next;
+        free(curr->data);
+        free(curr);
+        curr = next;
+    }
+    
+    printf("\nDetail: Car3 had loose shock mounts; a precise robotic wrench tightened them to meet quality standards, we apologize for the delay.\n\n");
+}
+
+// Circular Linked List Node for VIP prototypes.
+typedef struct CNode {
+    char *data;
+    struct CNode *next;
+} CNode;
+
+typedef struct {
+    CNode *head;
+} CircularLL;
+
+void initCLL(CircularLL *list) {
+    list->head = NULL;
+}
+
+void insertCircular(CircularLL *list, char *data) { //Function to create node
+    CNode *new_node = (CNode *)malloc(sizeof(CNode));
+    new_node->data = strdup(data);
+    if (list->head == NULL) {
+        list->head = new_node;
+        new_node->next = list->head;
+    } else {
+        CNode *current = list->head; //Keeps track of head
+        while (current->next != list->head)
+            current = current->next;
+        current->next = new_node;
+        new_node->next = list->head;
+    }
+}
+
+void TraverseCLL(CircularLL *list, int rounds) {
+    if (list->head == NULL)
+        return;
+    CNode *current = list->head;
+    for (int r = 0; r < rounds; r++) {
+        printf("--- Upgrade Round %d ---\n", r + 1);
+        do {
+            printf("%s\n", current->data);
+            current = current->next;
+        } while (current != list->head);
+    }
+}
+
+void MemCLL(CircularLL *list) {
+    if (list->head == NULL)
+        return;
+    CNode *start = list->head;
+    CNode *current = start->next; //Frees data as required
+    while (current != start) {
+        CNode *next = current->next;
+        free(current->data);
+        free(current);
+        current = next;
+    } //I implemented this function as a quick access way to free data as required
+    free(start->data);
+    free(start);
+    list->head = NULL; //By doing this, I may call upon free mememory without rewriting
+}
+
+void VIPS() { //VIP implementation
+    printf("<-------------------VIP Upgrades!---------------------->\n");
+    
+    CircularLL vipList;
+    initCLL(&vipList);
+    
+    // Add VIP prototypes.
+    insertCircular(&vipList, "Car1");
+    insertCircular(&vipList, "Car5");
+    printf("VIP prototypes recieving upgrades: Car1 and Car5.\n");
+    
+    // Simulate two rounds of upgrade checks.
+    TraverseCLL(&vipList, 2);
+    printf("\nUpgrade1: Car5 now features a Fusion reactor, allowing it to run nearly indefinetly without refueling\n\n");
+    printf("\nUpgrade2: Car 1 now features magnetic suspension, allowing active ride changing dynamics for a luxurious ride! "); //My own addition
+    MemCLL(&vipList);
+}
+//Main function
+int main() {
+    partDel();
+    Garage();
+    DefectiveTracking();
+    VIPS();
+    return 0;
+}
